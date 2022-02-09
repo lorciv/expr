@@ -20,31 +20,8 @@ const (
 	tokenMinus
 	tokenStar
 	tokenSlash
-
 	tokenNumber
 )
-
-func (t tokenType) String() string {
-	switch t {
-	case tokenEOF:
-		return "eof"
-	case tokenLParen:
-		return "lparen"
-	case tokenRParen:
-		return "rparen"
-	case tokenPlus:
-		return "plus"
-	case tokenMinus:
-		return "minus"
-	case tokenStar:
-		return "star"
-	case tokenSlash:
-		return "slash"
-	case tokenNumber:
-		return "num"
-	}
-	return "unknown"
-}
 
 type token struct {
 	typ   tokenType
@@ -52,17 +29,18 @@ type token struct {
 }
 
 func (t token) String() string {
-	return fmt.Sprintf("{%v %q}", t.typ, t.value)
+	des := [...]string{"EOF", "LP", "RP", "PLUS", "MINUS", "STAR", "SLASH", "NUM"}
+	return fmt.Sprintf("{%s %q}", des[t.typ], t.value)
 }
 
 const eof = -1
 
 type lexer struct {
-	input  string  // the string being scanned
-	start  int     // start position of current token
-	pos    int     // current position in the input
-	size   int     // size of the last rune read from input
-	tokens []token // list of scanned tokens
+	input  string     // the string being scanned
+	start  int        // start position of current token
+	pos    int        // current position in the input
+	size   int        // size of the last rune read from input
+	tokens chan token // channel of scanned tokens (output)
 }
 
 func (l *lexer) next() rune {
@@ -91,30 +69,30 @@ func (l *lexer) ignore() {
 }
 
 func (l *lexer) emit(typ tokenType) {
-	t := token{
+	l.tokens <- token{
 		typ:   typ,
 		value: l.input[l.start:l.pos],
 	}
-	l.tokens = append(l.tokens, t)
 	l.start = l.pos
-}
-
-func (s *lexer) run() {
-	state := lexToken
-	for state != nil {
-		state = state(s)
-	}
 }
 
 type stateFn func(s *lexer) stateFn
 
 func lexToken(l *lexer) stateFn {
-	r := l.next()
-	if r == eof {
-		l.emit(tokenEOF)
-		return nil
+	for {
+		r := l.next()
+		if r == eof {
+			l.emit(tokenEOF)
+			return nil
+		}
+		if !unicode.IsSpace(r) {
+			l.backup()
+			l.ignore()
+			break
+		}
 	}
 
+	r := l.next()
 	if unicode.IsDigit(r) {
 		return lexNumber
 	}
@@ -133,6 +111,7 @@ func lexToken(l *lexer) stateFn {
 	case '/':
 		l.emit(tokenSlash)
 	}
+
 	return lexToken
 }
 
@@ -150,15 +129,29 @@ func lexNumber(l *lexer) stateFn {
 	return lexToken
 }
 
+func (l *lexer) run() {
+	state := lexToken
+	for state != nil {
+		state = state(l)
+	}
+	close(l.tokens)
+}
+
+func lex(input string) chan token {
+	l := &lexer{
+		input:  input,
+		tokens: make(chan token),
+	}
+	go l.run() // Concurrently run the state machine
+	return l.tokens
+}
+
 func main() {
 	scan := bufio.NewScanner(os.Stdin)
 	for scan.Scan() {
-		l := lexer{
-			input: scan.Text(),
+		for t := range lex(scan.Text()) {
+			fmt.Println(t)
 		}
-		l.run()
-
-		fmt.Println(l.tokens)
 	}
 	if err := scan.Err(); err != nil {
 		log.Fatal(err)
