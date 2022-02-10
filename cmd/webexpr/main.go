@@ -13,6 +13,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleLex(w http.ResponseWriter, r *http.Request) {
+	// TODO: template cache
 	t, err := template.ParseFiles("lex.html")
 	if err != nil {
 		log.Print(err)
@@ -33,13 +34,11 @@ func handleLex(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, struct {
 		Input  string
 		Tokens []expr.Token
-	}{
-		Input:  input,
-		Tokens: tokens,
-	})
+	}{input, tokens})
 }
 
 func handleParse(w http.ResponseWriter, r *http.Request) {
+	// TODO: template cache
 	t, err := template.ParseFiles("parse.html")
 	if err != nil {
 		log.Print(err)
@@ -59,11 +58,7 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 		Input string
 		Expr  expr.Expr
 		Err   error
-	}{
-		Input: input,
-		Expr:  e,
-		Err:   err,
-	})
+	}{input, e, err})
 }
 
 func main() {
