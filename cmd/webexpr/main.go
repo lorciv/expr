@@ -8,6 +8,10 @@ import (
 	"github.com/lorciv/expr"
 )
 
+func handleIndex(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "index.html")
+}
+
 func handleLex(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("lex.html")
 	if err != nil {
@@ -63,6 +67,7 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/lex", handleLex)
 	http.HandleFunc("/parse", handleParse)
 	log.Fatal(http.ListenAndServe(":8080", nil))
