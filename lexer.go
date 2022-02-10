@@ -1,36 +1,40 @@
-package main
+package expr
 
 import (
-	"bufio"
 	"fmt"
-	"log"
-	"os"
 	"unicode"
 	"unicode/utf8"
 )
 
-type tokenType int
+type TokenType int
 
 const (
-	tokenEOF tokenType = iota
+	TokenEOF TokenType = iota
+	TokenError
 
-	tokenLParen
-	tokenRParen
-	tokenPlus
-	tokenMinus
-	tokenStar
-	tokenSlash
-	tokenNumber
+	TokenLParen
+	TokenRParen
+	TokenPlus
+	TokenMinus
+	TokenStar
+	TokenSlash
+	TokenNumber
 )
 
-type token struct {
-	typ   tokenType
-	value string
+type Token struct {
+	Type  TokenType
+	Value string
 }
 
-func (t token) String() string {
-	des := [...]string{"EOF", "LP", "RP", "PLUS", "MINUS", "STAR", "SLASH", "NUM"}
-	return fmt.Sprintf("{%s %q}", des[t.typ], t.value)
+func (t Token) String() string {
+	des := [...]string{"EOF", "ERR", "LP", "RP", "PLUS", "MINUS", "STAR", "SLASH", "NUM"}
+	switch t.Type {
+	case TokenEOF:
+		return "{EOF}"
+	case TokenError:
+		return fmt.Sprintf("{ERR %s}", t.Value)
+	}
+	return fmt.Sprintf("{%s %q}", des[t.Type], t.Value)
 }
 
 const eof = -1
@@ -40,7 +44,7 @@ type lexer struct {
 	start  int        // start position of current token
 	pos    int        // current position in the input
 	size   int        // size of the last rune read from input
-	tokens chan token // channel of scanned tokens (output)
+	tokens chan Token // channel of scanned tokens (output)
 }
 
 func (l *lexer) next() rune {
@@ -68,12 +72,20 @@ func (l *lexer) ignore() {
 	l.start = l.pos
 }
 
-func (l *lexer) emit(typ tokenType) {
-	l.tokens <- token{
-		typ:   typ,
-		value: l.input[l.start:l.pos],
+func (l *lexer) emit(typ TokenType) {
+	l.tokens <- Token{
+		Type:  typ,
+		Value: l.input[l.start:l.pos],
 	}
 	l.start = l.pos
+}
+
+func (l *lexer) errorf(format string, args ...interface{}) stateFn {
+	l.tokens <- Token{
+		Type:  TokenError,
+		Value: fmt.Sprintf(format, args...),
+	}
+	return nil
 }
 
 type stateFn func(s *lexer) stateFn
@@ -82,7 +94,8 @@ func lexToken(l *lexer) stateFn {
 	for {
 		r := l.next()
 		if r == eof {
-			l.emit(tokenEOF)
+			l.ignore()
+			l.emit(TokenEOF)
 			return nil
 		}
 		if !unicode.IsSpace(r) {
@@ -99,20 +112,26 @@ func lexToken(l *lexer) stateFn {
 
 	switch r {
 	case '(':
-		l.emit(tokenLParen)
+		l.emit(TokenLParen)
+		return lexToken
 	case ')':
-		l.emit(tokenRParen)
+		l.emit(TokenRParen)
+		return lexToken
 	case '+':
-		l.emit(tokenPlus)
+		l.emit(TokenPlus)
+		return lexToken
 	case '-':
-		l.emit(tokenMinus)
+		l.emit(TokenMinus)
+		return lexToken
 	case '*':
-		l.emit(tokenStar)
+		l.emit(TokenStar)
+		return lexToken
 	case '/':
-		l.emit(tokenSlash)
+		l.emit(TokenSlash)
+		return lexToken
 	}
 
-	return lexToken
+	return l.errorf("invalid token: %q", l.input[l.start:l.pos])
 }
 
 func lexNumber(l *lexer) stateFn {
@@ -125,7 +144,7 @@ func lexNumber(l *lexer) stateFn {
 	for unicode.IsDigit(l.peek()) {
 		l.next()
 	}
-	l.emit(tokenNumber)
+	l.emit(TokenNumber)
 	return lexToken
 }
 
@@ -137,23 +156,11 @@ func (l *lexer) run() {
 	close(l.tokens)
 }
 
-func lex(input string) chan token {
+func Lex(input string) chan Token {
 	l := &lexer{
 		input:  input,
-		tokens: make(chan token),
+		tokens: make(chan Token),
 	}
 	go l.run() // Concurrently run the state machine
 	return l.tokens
-}
-
-func main() {
-	scan := bufio.NewScanner(os.Stdin)
-	for scan.Scan() {
-		for t := range lex(scan.Text()) {
-			fmt.Println(t)
-		}
-	}
-	if err := scan.Err(); err != nil {
-		log.Fatal(err)
-	}
 }
