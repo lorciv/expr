@@ -65,5 +65,5 @@ func main() {
 	http.HandleFunc("/", handleIndex)
 	http.HandleFunc("/lex", handleLex)
 	http.HandleFunc("/parse", handleParse)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8088", nil))
 }
