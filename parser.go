@@ -16,25 +16,23 @@ func (p *parser) parseExpr() (Expr, error) {
 		return nil, err
 	}
 
-Loop:
-	for p.cur.Type != TokenEOF {
-		switch p.cur.Type {
-		case TokenPlus:
+	for {
+		if p.cur.Type == TokenPlus {
 			p.cur = <-p.tokens
 			right, err := p.parseTerm()
 			if err != nil {
 				return nil, err
 			}
 			left = add{left, right}
-		case TokenMinus:
+		} else if p.cur.Type == TokenMinus {
 			p.cur = <-p.tokens
 			right, err := p.parseTerm()
 			if err != nil {
 				return nil, err
 			}
 			left = sub{left, right}
-		default:
-			break Loop
+		} else {
+			break
 		}
 	}
 
@@ -47,25 +45,23 @@ func (p *parser) parseTerm() (Expr, error) {
 		return nil, err
 	}
 
-Loop:
-	for p.cur.Type != TokenEOF {
-		switch p.cur.Type {
-		case TokenStar:
+	for {
+		if p.cur.Type == TokenStar {
 			p.cur = <-p.tokens
 			right, err := p.parseFactor()
 			if err != nil {
 				return nil, err
 			}
 			left = mul{left, right}
-		case TokenSlash:
+		} else if p.cur.Type == TokenSlash {
 			p.cur = <-p.tokens
 			right, err := p.parseFactor()
 			if err != nil {
 				return nil, err
 			}
 			left = div{left, right}
-		default:
-			break Loop
+		} else {
+			break
 		}
 	}
 
@@ -105,5 +101,15 @@ func Parse(input string) (Expr, error) {
 		tokens: Lex(input),
 	}
 	p.cur = <-p.tokens
-	return p.parseExpr()
+	e, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	if p.cur.Type != TokenEOF {
+		if p.cur.Type == TokenError {
+			return nil, errors.New(p.cur.Value)
+		}
+		return nil, errors.New("generic error")
+	}
+	return e, nil
 }
