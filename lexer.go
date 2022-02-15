@@ -19,6 +19,7 @@ const (
 	TokenStar
 	TokenSlash
 	TokenNumber
+	TokenIdent
 )
 
 type Token struct {
@@ -27,7 +28,7 @@ type Token struct {
 }
 
 func (t Token) String() string {
-	des := [...]string{"EOF", "ERR", "LP", "RP", "PLUS", "MINUS", "STAR", "SLASH", "NUM"}
+	des := [...]string{2: "LPAR", "RPAR", "PLUS", "MINUS", "STAR", "SLASH", "NUM", "IDENT"}
 	switch t.Type {
 	case TokenEOF:
 		return "{EOF}"
@@ -106,6 +107,9 @@ func lexToken(l *lexer) stateFn {
 	}
 
 	r := l.next()
+	if unicode.IsLetter(r) {
+		return lexIdentifier
+	}
 	if unicode.IsDigit(r) {
 		return lexNumber
 	}
@@ -132,6 +136,14 @@ func lexToken(l *lexer) stateFn {
 	}
 
 	return l.errorf("invalid token: %q", l.input[l.start:l.pos])
+}
+
+func lexIdentifier(l *lexer) stateFn {
+	for unicode.IsLetter(l.peek()) {
+		l.next()
+	}
+	l.emit(TokenIdent)
+	return lexToken
 }
 
 func lexNumber(l *lexer) stateFn {

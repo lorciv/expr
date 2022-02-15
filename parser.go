@@ -77,6 +77,11 @@ func (p *parser) parseFactor() (Expr, error) {
 		p.cur = <-p.tokens
 		return literal(v), nil
 	}
+	if p.cur.Type == TokenIdent {
+		v := Var(p.cur.Value)
+		p.cur = <-p.tokens
+		return v, nil
+	}
 	if p.cur.Type == TokenLParen {
 		p.cur = <-p.tokens
 		inner, err := p.parseExpr()
@@ -88,6 +93,14 @@ func (p *parser) parseFactor() (Expr, error) {
 		}
 		p.cur = <-p.tokens
 		return inner, nil
+	}
+	if p.cur.Type == TokenMinus {
+		p.cur = <-p.tokens
+		x, err := p.parseTerm()
+		if err != nil {
+			return nil, err
+		}
+		return neg{x: x}, nil
 	}
 	if p.cur.Type == TokenError {
 		return nil, errors.New(p.cur.Value)
@@ -109,7 +122,7 @@ func Parse(input string) (Expr, error) {
 		if p.cur.Type == TokenError {
 			return nil, errors.New(p.cur.Value)
 		}
-		return nil, errors.New("generic error")
+		return nil, errors.New("invalid expression")
 	}
 	return e, nil
 }

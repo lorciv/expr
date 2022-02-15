@@ -1,33 +1,71 @@
 package expr
 
-import "fmt"
+import (
+	"fmt"
+)
+
+type Env map[Var]float64
 
 // An Expr is an arithmetic expression.
 type Expr interface {
-	Eval() float64
-	Children() []Expr
+	Eval(env Env) float64
+	Check(vars map[Var]bool) error
+}
+
+type Var string
+
+func (v Var) Eval(env Env) float64 {
+	return env[v]
+}
+
+func (v Var) Check(vars map[Var]bool) error {
+	vars[v] = true
+	return nil
+}
+
+func (v Var) String() string {
+	return fmt.Sprintf("{var %s}", string(v))
 }
 
 type literal float64
 
-func (l literal) Eval() float64 {
+func (l literal) Eval(_ Env) float64 {
 	return float64(l)
 }
 
-func (l literal) Children() []Expr {
+func (l literal) Check(vars map[Var]bool) error {
 	return nil
+}
+
+type neg struct {
+	x Expr
+}
+
+func (n neg) Eval(env Env) float64 {
+	return -1 * n.x.Eval(env)
+}
+
+func (n neg) Check(vars map[Var]bool) error {
+	return n.x.Check(vars)
+}
+
+func (n neg) String() string {
+	return fmt.Sprintf("{neg %v}", n.x)
 }
 
 type add struct {
 	left, right Expr
 }
 
-func (a add) Eval() float64 {
-	return a.left.Eval() + a.right.Eval()
+func (a add) Eval(env Env) float64 {
+	return a.left.Eval(env) + a.right.Eval(env)
 }
 
-func (a add) Children() []Expr {
-	return []Expr{a.left, a.right}
+func (a add) Check(vars map[Var]bool) error {
+	if err := a.left.Check(vars); err != nil {
+		return err
+	}
+	return a.right.Check(vars)
 }
 
 func (a add) String() string {
@@ -38,12 +76,15 @@ type sub struct {
 	left, right Expr
 }
 
-func (s sub) Eval() float64 {
-	return s.left.Eval() - s.right.Eval()
+func (s sub) Eval(env Env) float64 {
+	return s.left.Eval(env) - s.right.Eval(env)
 }
 
-func (s sub) Children() []Expr {
-	return []Expr{s.left, s.right}
+func (s sub) Check(vars map[Var]bool) error {
+	if err := s.left.Check(vars); err != nil {
+		return err
+	}
+	return s.right.Check(vars)
 }
 
 func (s sub) String() string {
@@ -54,12 +95,15 @@ type mul struct {
 	left, right Expr
 }
 
-func (m mul) Eval() float64 {
-	return m.left.Eval() * m.right.Eval()
+func (m mul) Eval(env Env) float64 {
+	return m.left.Eval(env) * m.right.Eval(env)
 }
 
-func (m mul) Children() []Expr {
-	return []Expr{m.left, m.right}
+func (m mul) Check(vars map[Var]bool) error {
+	if err := m.left.Check(vars); err != nil {
+		return err
+	}
+	return m.right.Check(vars)
 }
 
 func (m mul) String() string {
@@ -70,12 +114,15 @@ type div struct {
 	left, right Expr
 }
 
-func (d div) Eval() float64 {
-	return d.left.Eval() / d.right.Eval()
+func (d div) Eval(env Env) float64 {
+	return d.left.Eval(env) / d.right.Eval(env)
 }
 
-func (d div) Children() []Expr {
-	return []Expr{d.left, d.right}
+func (d div) Check(vars map[Var]bool) error {
+	if err := d.left.Check(vars); err != nil {
+		return err
+	}
+	return d.right.Check(vars)
 }
 
 func (d div) String() string {
