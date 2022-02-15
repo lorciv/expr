@@ -6,8 +6,13 @@ import (
 )
 
 type parser struct {
-	tokens chan Token
-	cur    Token
+	tokens    chan Token
+	cur, next Token
+}
+
+func (p *parser) advance() {
+	p.cur = p.next
+	p.next = <-p.tokens
 }
 
 func (p *parser) parseExpr() (Expr, error) {
@@ -18,14 +23,14 @@ func (p *parser) parseExpr() (Expr, error) {
 
 	for {
 		if p.cur.Type == TokenPlus {
-			p.cur = <-p.tokens
+			p.advance()
 			right, err := p.parseTerm()
 			if err != nil {
 				return nil, err
 			}
 			left = add{binary{left, right}}
 		} else if p.cur.Type == TokenMinus {
-			p.cur = <-p.tokens
+			p.advance()
 			right, err := p.parseTerm()
 			if err != nil {
 				return nil, err
@@ -47,14 +52,14 @@ func (p *parser) parseTerm() (Expr, error) {
 
 	for {
 		if p.cur.Type == TokenStar {
-			p.cur = <-p.tokens
+			p.advance()
 			right, err := p.parseFactor()
 			if err != nil {
 				return nil, err
 			}
 			left = mul{binary{left, right}}
 		} else if p.cur.Type == TokenSlash {
-			p.cur = <-p.tokens
+			p.advance()
 			right, err := p.parseFactor()
 			if err != nil {
 				return nil, err
@@ -74,16 +79,16 @@ func (p *parser) parseFactor() (Expr, error) {
 		if err != nil {
 			return nil, err
 		}
-		p.cur = <-p.tokens
+		p.advance()
 		return literal(v), nil
 	}
 	if p.cur.Type == TokenIdent {
 		v := Var(p.cur.Value)
-		p.cur = <-p.tokens
+		p.advance()
 		return v, nil
 	}
 	if p.cur.Type == TokenLParen {
-		p.cur = <-p.tokens
+		p.advance()
 		inner, err := p.parseExpr()
 		if err != nil {
 			return nil, err
@@ -91,11 +96,11 @@ func (p *parser) parseFactor() (Expr, error) {
 		if p.cur.Type != TokenRParen {
 			return nil, errors.New("missing (")
 		}
-		p.cur = <-p.tokens
+		p.advance()
 		return inner, nil
 	}
 	if p.cur.Type == TokenMinus {
-		p.cur = <-p.tokens
+		p.advance()
 		x, err := p.parseTerm()
 		if err != nil {
 			return nil, err
@@ -114,6 +119,7 @@ func Parse(input string) (Expr, error) {
 		tokens: Lex(input),
 	}
 	p.cur = <-p.tokens
+	p.next = <-p.tokens
 	e, err := p.parseExpr()
 	if err != nil {
 		return nil, err
