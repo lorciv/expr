@@ -1,24 +1,9 @@
-{{define "node"}}
-<li>
-    {{.}}
-    {{if .Children}}
-    <ul>
-        {{range .Children}}
-        {{template "node" .}}
-        {{end}}
-    </ul>
-    {{end}}
-</li>
-{{end}}
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parse</title>
-
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
 </head>
 <body>
     <header>
@@ -30,17 +15,8 @@
             <button type="submit">Parse</button>
         </form>
         <br>
-        {{with .Expr}}<div id="ast"><ul>{{template "node" .}}</ul></div>{{end}}
+        {{with .Expr}}<div class="expr">{{.}}</div>{{end}}
         {{with .Err}}<div class="error">Error: {{.}}</div>{{end}}
     </main>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/1.12.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/jstree.min.js"></script>
-
-    <script>
-
-        $('#ast').jstree();
-
-    </script>
 </body>
 </html>

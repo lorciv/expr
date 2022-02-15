@@ -23,14 +23,14 @@ func (p *parser) parseExpr() (Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			left = add{left, right}
+			left = add{binary{left, right}}
 		} else if p.cur.Type == TokenMinus {
 			p.cur = <-p.tokens
 			right, err := p.parseTerm()
 			if err != nil {
 				return nil, err
 			}
-			left = sub{left, right}
+			left = sub{binary{left, right}}
 		} else {
 			break
 		}
@@ -52,14 +52,14 @@ func (p *parser) parseTerm() (Expr, error) {
 			if err != nil {
 				return nil, err
 			}
-			left = mul{left, right}
+			left = mul{binary{left, right}}
 		} else if p.cur.Type == TokenSlash {
 			p.cur = <-p.tokens
 			right, err := p.parseFactor()
 			if err != nil {
 				return nil, err
 			}
-			left = div{left, right}
+			left = div{binary{left, right}}
 		} else {
 			break
 		}
