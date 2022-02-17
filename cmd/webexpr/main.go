@@ -47,15 +47,33 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := r.FormValue("input")
+	if input == "" {
+		t.Execute(w, nil)
+		return
+	}
+	log.Println("parse", input)
 
 	var e expr.Expr
-	var res float64
-	if input != "" {
-		log.Println("parse", input)
-		e, err = expr.Parse(input)
-		if err == nil {
-			res = e.Eval(expr.Env{})
-		}
+	e, err = expr.Parse(input)
+	if err != nil {
+		log.Print(err)
+		t.Execute(w, struct {
+			Input string
+			Expr  expr.Expr
+			Res   float64
+			Err   error
+		}{input, nil, 0, err})
+		return
+	}
+	vars := make(map[expr.Var]bool)
+	if err := e.Check(vars); err != nil {
+		t.Execute(w, struct {
+			Input string
+			Expr  expr.Expr
+			Res   float64
+			Err   error
+		}{input, nil, 0, err})
+		return
 	}
 
 	t.Execute(w, struct {
@@ -63,7 +81,7 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 		Expr  expr.Expr
 		Res   float64
 		Err   error
-	}{input, e, res, err})
+	}{input, e, e.Eval(make(expr.Env)), nil})
 }
 
 func main() {

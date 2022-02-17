@@ -16,12 +16,11 @@
     </header>
     <main>
         <form>
-            <input type="text" name="input" value="{{.Input}}" autofocus>
+            <input type="text" name="input" value="{{with .Input}}{{.}}{{end}}" autofocus>
             <button type="submit">Parse</button>
         </form>
-        <br>
-        {{if .Expr}}<div class="expr">{{.Expr}}</div><div class="result">{{.Res}}</div>{{end}}
-        {{with .Err}}<div class="error">Error: {{.}}</div>{{end}}
+        {{if .Expr}}<div class="expr"><p>{{.Expr}}</p></div><div class="result"><p>{{.Res}}</p></div>{{end}}
+        {{with .Err}}<div class="error"><p>Error: {{.}}</p></div>{{end}}
     </main>
 </body>
 </html>
