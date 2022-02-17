@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Parse</title>
     <style>
+        .message {
+            color: blue;
+        }
         .error {
             color: red;
         }
@@ -21,6 +24,7 @@
         </form>
         {{if .Expr}}<div class="expr"><p>{{.Expr}}</p></div><div class="result"><p>{{.Res}}</p></div>{{end}}
         {{with .Err}}<div class="error"><p>Error: {{.}}</p></div>{{end}}
+        {{with .Msg}}<div class="message"><p>{{.}}</p></div>{{end}}
     </main>
 </body>
 </html>

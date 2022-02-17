@@ -61,8 +61,9 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 			Input string
 			Expr  expr.Expr
 			Res   float64
+			Msg   string
 			Err   error
-		}{input, nil, 0, err})
+		}{input, nil, 0, "", err})
 		return
 	}
 	vars := make(map[expr.Var]bool)
@@ -71,17 +72,23 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 			Input string
 			Expr  expr.Expr
 			Res   float64
+			Msg   string
 			Err   error
-		}{input, nil, 0, err})
+		}{input, nil, 0, "", err})
 		return
 	}
 
+	msg := ""
+	if len(vars) > 0 {
+		msg = "All variables have been set to 0"
+	}
 	t.Execute(w, struct {
 		Input string
 		Expr  expr.Expr
 		Res   float64
+		Msg   string
 		Err   error
-	}{input, e, e.Eval(make(expr.Env)), nil})
+	}{input, e, e.Eval(make(expr.Env)), msg, nil})
 }
 
 func main() {
