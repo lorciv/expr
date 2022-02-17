@@ -2,6 +2,7 @@ package expr
 
 import (
 	"fmt"
+	"math"
 )
 
 type Env map[Var]float64
@@ -110,4 +111,43 @@ func (d div) Eval(env Env) float64 {
 
 func (d div) String() string {
 	return fmt.Sprintf("{div %v %v}", d.left, d.right)
+}
+
+type call struct {
+	fn   string
+	args []Expr
+}
+
+func (c call) Eval(env Env) float64 {
+	switch c.fn {
+	case "sin":
+		return math.Sin(c.args[0].Eval(env))
+	case "cos":
+		return math.Cos(c.args[0].Eval(env))
+	case "pow":
+		return math.Pow(c.args[0].Eval(env), c.args[1].Eval(env))
+	}
+	panic("unknown function call: " + c.fn)
+}
+
+var arity = map[string]int{"sin": 1, "cos": 1, "pow": 2}
+
+func (c call) Check(vars map[Var]bool) error {
+	a, ok := arity[c.fn]
+	if !ok {
+		return fmt.Errorf("unknown function call: %s", c.fn)
+	}
+	if len(c.args) != a {
+		return fmt.Errorf("call to %s has %d args, expected %d", c.fn, len(c.args), a)
+	}
+	for _, e := range c.args {
+		if err := e.Check(vars); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c call) String() string {
+	return fmt.Sprintf("{call %s %v}", c.fn, c.args)
 }

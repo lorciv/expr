@@ -20,6 +20,7 @@ const (
 	TokenSlash
 	TokenNumber
 	TokenIdent
+	TokenComma
 )
 
 type Token struct {
@@ -28,7 +29,7 @@ type Token struct {
 }
 
 func (t Token) String() string {
-	des := [...]string{2: "LPAR", "RPAR", "PLUS", "MINUS", "STAR", "SLASH", "NUM", "IDENT"}
+	des := [...]string{2: "LPAR", "RPAR", "PLUS", "MINUS", "STAR", "SLASH", "NUM", "IDENT", "COMMA"}
 	switch t.Type {
 	case TokenEOF:
 		return "{EOF}"
@@ -132,6 +133,9 @@ func lexToken(l *lexer) stateFn {
 		return lexToken
 	case '/':
 		l.emit(TokenSlash)
+		return lexToken
+	case ',':
+		l.emit(TokenComma)
 		return lexToken
 	}
 

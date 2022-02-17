@@ -82,6 +82,33 @@ func (p *parser) parseFactor() (Expr, error) {
 		p.advance()
 		return literal(v), nil
 	}
+	if p.cur.Type == TokenIdent && p.next.Type == TokenLParen {
+		c := call{fn: p.cur.Value}
+		p.advance()
+		p.advance()
+
+		e, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+		c.args = []Expr{e}
+
+		for p.cur.Type == TokenComma {
+			p.advance()
+			e, err := p.parseExpr()
+			if err != nil {
+				return nil, err
+			}
+			c.args = append(c.args, e)
+		}
+
+		if p.cur.Type != TokenRParen {
+			return nil, errors.New("missing )")
+		}
+
+		p.advance()
+		return c, nil
+	}
 	if p.cur.Type == TokenIdent {
 		v := Var(p.cur.Value)
 		p.advance()

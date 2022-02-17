@@ -15,8 +15,18 @@ func main() {
 		e, err := expr.Parse(scan.Text())
 		if err != nil {
 			log.Print(err)
+			continue
 		}
-		fmt.Println(e)
+		fmt.Println("Parsed:", e)
+
+		vars := make(map[expr.Var]bool)
+		if err := e.Check(vars); err != nil {
+			log.Print(err)
+			continue
+		}
+		fmt.Println("Vars:", vars, "(all set to 0)")
+
+		fmt.Println("Eval:", e.Eval(make(expr.Env)))
 	}
 	if err := scan.Err(); err != nil {
 		log.Fatal(err)

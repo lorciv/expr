@@ -46,19 +46,24 @@ func handleParse(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var e expr.Expr
-
 	input := r.FormValue("input")
+
+	var e expr.Expr
+	var res float64
 	if input != "" {
 		log.Println("parse", input)
 		e, err = expr.Parse(input)
+		if err == nil {
+			res = e.Eval(expr.Env{})
+		}
 	}
 
 	t.Execute(w, struct {
 		Input string
 		Expr  expr.Expr
+		Res   float64
 		Err   error
-	}{input, e, err})
+	}{input, e, res, err})
 }
 
 func main() {
