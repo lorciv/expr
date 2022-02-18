@@ -6,12 +6,13 @@ import (
 	"unicode/utf8"
 )
 
+// TokenType is the type of a token.
 type TokenType int
 
+// Valid values for TokenType.
 const (
 	TokenEOF TokenType = iota
 	TokenError
-
 	TokenLParen
 	TokenRParen
 	TokenPlus
@@ -23,6 +24,7 @@ const (
 	TokenComma
 )
 
+// Token is an atom of the expression grammar. It is the product of lexical analysis as returned by Lex.
 type Token struct {
 	Type  TokenType
 	Value string
@@ -172,6 +174,9 @@ func (l *lexer) run() {
 	close(l.tokens)
 }
 
+// Lex launches lexical analysis on the given expression. It returns a channel of tokens from which
+// the caller can retrieve the tokens. When there are no more tokens, the channel will produce tokens of type TokenEOF.
+// In case of error, the channel produces a TokenError, with Value containing the error message.
 func Lex(input string) chan Token {
 	l := &lexer{
 		input:  input,

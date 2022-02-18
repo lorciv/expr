@@ -5,14 +5,24 @@ import (
 	"math"
 )
 
+// Env maps variables to their respective numeric value. It represents an environment in which expressions can be evaluated.
 type Env map[Var]float64
 
-// An Expr is an arithmetic expression.
+// Expr is a parsed arithmetic expression that can be checked and evaluated. To avoid the risk of run-time errors,
+// checking should be done before evaulation.
+//
+// Eval evaluates the expression in the given environment. The environment can be used to set the value of the variables
+// that appear in the expression. Unset variables default to 0.
+//
+// Check checks that the expression is valid and returns the set of defined variables. A valid expression
+// can be safely evaluated without run-time errors. The initial empty set of variables must be provided by the caller,
+// due to the recursive nature of this function.
 type Expr interface {
 	Eval(env Env) float64
 	Check(vars map[Var]bool) error
 }
 
+// Var is an expression consisting of a named variable. It is exported so that clients can populate the environment (Env).
 type Var string
 
 func (v Var) Eval(env Env) float64 {

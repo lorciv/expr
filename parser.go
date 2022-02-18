@@ -2,6 +2,7 @@ package expr
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
@@ -141,6 +142,7 @@ func (p *parser) parseFactor() (Expr, error) {
 	return nil, errors.New("unrecognized")
 }
 
+// Parse parses an expression. The parsed expression can then be evaluated.
 func Parse(input string) (Expr, error) {
 	p := parser{
 		tokens: Lex(input),
@@ -158,4 +160,29 @@ func Parse(input string) (Expr, error) {
 		return nil, errors.New("invalid expression")
 	}
 	return e, nil
+}
+
+// Eval parses, checks and evaluates an expression in the given environment, and returns the result. All variables
+// must be explicitly set in the environment.
+//
+// Eval is a practical alternative to Parse for one-off calculations. If multiple evaluations of the same
+// expression are required, consider using Parse once and then calling the Eval method on the parsed expression
+// as needed in order to avoid repeating the parsing upon every evaluation.
+func Eval(input string, env Env) (res float64, err error) {
+	e, err := Parse(input)
+	if err != nil {
+		return 0, err
+	}
+
+	vars := make(map[Var]bool)
+	if err := e.Check(vars); err != nil {
+		return 0, err
+	}
+	for v := range vars {
+		if _, ok := env[v]; !ok {
+			return 0, fmt.Errorf("missing var %s in environment", v)
+		}
+	}
+
+	return e.Eval(env), nil
 }
